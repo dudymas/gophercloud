@@ -261,3 +261,13 @@ func NewOrchestrationV1(client *gophercloud.ProviderClient, eo gophercloud.Endpo
 	}
 	return &gophercloud.ServiceClient{ProviderClient: client, Endpoint: url}, nil
 }
+
+// NewTelemetryV2 creates a ServiceClient that may be used to access the v2 telemetry service.
+func NewTelemetryV2(client *gophercloud.ProviderClient, eo gophercloud.EndpointOpts) (*gophercloud.ServiceClient, error) {
+	eo.ApplyDefaults("metering")
+	url, err := client.EndpointLocator(eo)
+	if err != nil {
+		return nil, err
+	}
+	return &gophercloud.ServiceClient{ProviderClient: client, Endpoint: url}, nil
+}
