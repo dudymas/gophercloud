@@ -98,21 +98,24 @@ func MeterStatistics(client *gophercloud.ServiceClient, n string, optsBuilder Me
 		url  = statisticsURL(client, n)
 		opts gophercloud.RequestOpts
 		err  error
+		kind OptsKind
 	)
 
-	if optsBuilder != nil && optsBuilder.Kind() == QueryOpts {
+	if optsBuilder != nil {
+		kind = optsBuilder.Kind()
+	}
+
+	switch kind {
+	case QueryOpts:
 		query, err := optsBuilder.ToMeterStatisticsQuery()
-		if err != nil {
-			res.Err = err
-			return res
-		}
 		url += query
-	} else if optsBuilder != nil && optsBuilder.Kind() == BodyContentOpts {
+	case BodyContentOpts:
 		opts.JSONBody, err = optsBuilder.ToMeterStatisticsQuery()
-		if err != nil {
-			res.Err = err
-			return res
-		}
+	}
+
+	if err != nil {
+		res.Err = err
+		return res
 	}
 
 	_, res.Err = client.Get(url, &res.Body, &opts)
