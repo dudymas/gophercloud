@@ -16,7 +16,7 @@ type ListOptsBuilder interface {
 type ListOpts struct {
 }
 
-// ToServerListQuery formats a ListOpts into a query string.
+// ToMeterListQuery formats a ListOpts into a query string.
 func (opts ListOpts) ToMeterListQuery() (string, error) {
 	q, err := gophercloud.BuildQueryString(opts)
 	if err != nil {
@@ -43,13 +43,26 @@ func List(client *gophercloud.ServiceClient, opts ListOptsBuilder) listResult {
 	return res
 }
 
-// StatisticsOptsBuilder allows extensions to add additional parameters to the
+//OptsKind describes the mode with which a given set of opts should be tranferred
+type OptsKind string
+
+var (
+	//BodyContentOpts is a kind of option serialization. The MeterStatisticsOptsBuilder is expected
+	//to emit JSON from ToMeterStatisticsQuery()
+	BodyContentOpts = OptsKind("Body")
+	//QueryOpts is a kind of option serialization. The MeterStatisticsOptsBuilder is expected
+	//to emit uri encoded fields from ToMeterStatisticsQuery()
+	QueryOpts = OptsKind("Query")
+)
+
+// MeterStatisticsOptsBuilder allows extensions to add additional parameters to the
 // List request.
 type MeterStatisticsOptsBuilder interface {
+	Kind() OptsKind
 	ToMeterStatisticsQuery() (string, error)
 }
 
-// StatisticsOpts allows the filtering and sorting of collections through
+// MeterStatisticsOpts allows the filtering and sorting of collections through
 // the API. Filtering is achieved by passing in struct field values that map to
 // the server attributes you want to see returned.
 type MeterStatisticsOpts struct {
@@ -64,7 +77,12 @@ type MeterStatisticsOpts struct {
 	Period int `q:"period"`
 }
 
-// ToStatisticsQuery formats a StatisticsOpts into a query string.
+// Kind returns QueryOpts by default for MeterStatisticsOpts
+func (opts MeterStatisticsOpts) Kind() OptsKind {
+	return QueryOpts
+}
+
+// ToMeterStatisticsQuery formats a StatisticsOpts into a query string.
 func (opts MeterStatisticsOpts) ToMeterStatisticsQuery() (string, error) {
 	q, err := gophercloud.BuildQueryString(opts)
 	if err != nil {
@@ -73,20 +91,30 @@ func (opts MeterStatisticsOpts) ToMeterStatisticsQuery() (string, error) {
 	return q.String(), nil
 }
 
-// List makes a request against the API to list meters accessible to you.
-func MeterStatistics(client *gophercloud.ServiceClient, n string, opts MeterStatisticsOptsBuilder) statisticsResult {
-	var res statisticsResult
-	url := statisticsURL(client, n)
+//MeterStatistics gathers statistics based on filters, groups, and period options
+func MeterStatistics(client *gophercloud.ServiceClient, n string, optsBuilder MeterStatisticsOptsBuilder) statisticsResult {
+	var (
+		res  statisticsResult
+		url  = statisticsURL(client, n)
+		opts gophercloud.RequestOpts
+		err  error
+	)
 
-	if opts != nil {
-		query, err := opts.ToMeterStatisticsQuery()
+	if optsBuilder != nil && optsBuilder.Kind() == QueryOpts {
+		query, err := optsBuilder.ToMeterStatisticsQuery()
 		if err != nil {
 			res.Err = err
 			return res
 		}
 		url += query
+	} else if optsBuilder != nil && optsBuilder.Kind() == BodyContentOpts {
+		opts.JSONBody, err = optsBuilder.ToMeterStatisticsQuery()
+		if err != nil {
+			res.Err = err
+			return res
+		}
 	}
 
-	_, res.Err = client.Get(url, &res.Body, &gophercloud.RequestOpts{})
+	_, res.Err = client.Get(url, &res.Body, &opts)
 	return res
 }
