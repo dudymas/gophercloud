@@ -43,7 +43,7 @@ func List(client *gophercloud.ServiceClient, opts ListOptsBuilder) listResult {
 	return res
 }
 
-//OptsKind describes the mode with which a given set of opts should be tranferred
+// OptsKind describes the mode with which a given set of opts should be tranferred
 type OptsKind string
 
 var (
@@ -91,7 +91,7 @@ func (opts MeterStatisticsOpts) ToMeterStatisticsQuery() (string, error) {
 	return q.String(), nil
 }
 
-//MeterStatistics gathers statistics based on filters, groups, and period options
+// MeterStatistics gathers statistics based on filters, groups, and period options
 func MeterStatistics(client *gophercloud.ServiceClient, n string, optsBuilder MeterStatisticsOptsBuilder) statisticsResult {
 	var (
 		res  statisticsResult
